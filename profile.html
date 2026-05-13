@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <section class="section">
+      <div id="loading" class="loading">Loading...</div>
+      <div id="profile-display"></div>
+      <div id="profile-edit" style="display:none;">
+        <h2 style="margin-bottom:1rem;">Edit Profile</h2>
+        <form class="create-form" onsubmit="handleSaveProfile(event)">
+          <div class="form-group">
+            <label>Profile Picture</label>
+            <input type="file" id="avatar-input" accept="image/*" onchange="handleAvatarUpload(event)">
+            <div id="avatar-preview" style="margin-top:0.5rem;"></div>
+          </div>
+          <div class="form-group">
+            <label for="bio">Bio</label>
+            <textarea id="bio" name="bio" rows="3" placeholder="Tell the community about yourself..."></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+            <div class="form-group">
+              <label for="linkedin">LinkedIn URL</label>
+              <input type="url" id="linkedin" name="linkedin" placeholder="https://linkedin.com/in/...">
+            </div>
+            <div class="form-group">
+              <label for="github">GitHub URL</label>
+              <input type="url" id="github" name="github" placeholder="https://github.com/...">
+            </div>
+            <div class="form-group">
+              <label for="twitter">Twitter URL</label>
+              <input type="url" id="twitter" name="twitter" placeholder="https://twitter.com/...">
+            </div>
+            <div class="form-group">
+              <label for="facebook">Facebook URL</label>
+              <input type="url" id="facebook" name="facebook" placeholder="https://facebook.com/...">
+            </div>
+            <div class="form-group">
+              <label for="website">Website URL</label>
+              <input type="url" id="website" name="website" placeholder="https://yoursite.com">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary">Save Profile</button>
+        </form>
+      </div>
+
+      <div id="my-posts" style="margin-top:3rem;"></div>
+      <div id="my-writeups" style="margin-top:3rem;"></div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/posts.js"></script>
+  <script src="js/writeups.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    let viewingUserId = null;
+
+    async function loadProfilePage() {
+      const loading = document.getElementById('loading');
+      const params = new URLSearchParams(window.location.search);
+      const targetUser = params.get('user');
+
+      if (targetUser) {
+        viewingUserId = targetUser;
+        await loadPublicProfile(targetUser);
+      } else if (!getCurrentUserId()) {
+        loading.style.display = 'none';
+        document.getElementById('profile-display').innerHTML =
+          '<div class="empty-state"><h3>Please log in</h3><p><a href="login.html">Sign in</a> to view your profile.</p></div>';
+        return;
+      } else {
+        await loadProfile();
+        renderProfile();
+        renderMyContent();
+      }
+      loading.style.display = 'none';
+    }
+
+    async function loadPublicProfile(userId) {
+      const display = document.getElementById('profile-display');
+      const p = await getProfile(userId);
+      if (!p) {
+        display.innerHTML = '<div class="empty-state"><h3>User not found</h3></div>';
+        return;
+      }
+
+      const socialLinks = renderSocialLinks(p);
+      const avatarHtml = p.avatar_url
+        ? `<img src="${p.avatar_url}" alt="" class="profile-avatar-img" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"><div class="profile-avatar" style="display:none">${(p.full_name || p.username || '?')[0].toUpperCase()}</div>`
+        : `<div class="profile-avatar">${(p.full_name || p.username || '?')[0].toUpperCase()}</div>`;
+
+      display.innerHTML = `
+        <div class="profile-header">
+          ${avatarHtml}
+          <div class="profile-info">
+            <h1>${escapeHtml(p.full_name || p.username)}</h1>
+            <p class="profile-username">@${escapeHtml(p.username)}</p>
+            ${p.bio ? `<p class="profile-bio">${escapeHtml(p.bio)}</p>` : ''}
+            <div class="profile-links">${socialLinks}</div>
+          </div>
+        </div>
+      `;
+
+      const posts = await supabaseClient
+        .from('posts')
+        .select('*, profiles!author_id(username, full_name, avatar_url)')
+        .eq('author_id', userId)
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+      const writeups = await supabaseClient
+        .from('writeups')
+        .select('*, profiles!author_id(username, full_name, avatar_url)')
+        .eq('author_id', userId)
+        .eq('published', true)
+        .order('created_at', { ascending: false });
+
+      const postsEl = document.getElementById('my-posts');
+      const writeupsEl = document.getElementById('my-writeups');
+
+      if (posts.data && posts.data.length) {
+        postsEl.innerHTML = `<h2 class="section-title">Posts</h2><div class="posts-grid">${
+          posts.data.map(p => renderPostCard(p)).join('')
+        }</div>`;
+      }
+
+      if (writeups.data && writeups.data.length) {
+        writeupsEl.innerHTML = `<h2 class="section-title">Writeups</h2><div class="writeups-grid">${
+          writeups.data.map(w => renderWriteupCard(w)).join('')
+        }</div>`;
+      }
+    }
+
+    function renderProfile() {
+      const display = document.getElementById('profile-display');
+      const edit = document.getElementById('profile-edit');
+      const p = currentProfile;
+
+      if (!p) {
+        display.innerHTML = '<div class="empty-state"><h3>Profile not found</h3></div>';
+        return;
+      }
+
+      const socialLinks = renderSocialLinks(p);
+      const avatarHtml = p.avatar_url
+        ? `<img src="${p.avatar_url}" alt="" class="profile-avatar-img">`
+        : `<div class="profile-avatar">${(p.full_name || p.username || '?')[0].toUpperCase()}</div>`;
+
+      display.innerHTML = `
+        <div class="profile-header">
+          ${avatarHtml}
+          <div class="profile-info">
+            <h1>${escapeHtml(p.full_name || p.username)}</h1>
+            <p class="profile-username">@${escapeHtml(p.username)}</p>
+            ${p.bio ? `<p class="profile-bio">${escapeHtml(p.bio)}</p>` : ''}
+            <div class="profile-links">${socialLinks}</div>
+            <button class="btn btn-outline" onclick="toggleEdit()" style="margin-top:1rem;">Edit Profile</button>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('bio').value = p.bio || '';
+      document.getElementById('linkedin').value = p.linkedin_url || '';
+      document.getElementById('github').value = p.github_url || '';
+      document.getElementById('twitter').value = p.twitter_url || '';
+      document.getElementById('facebook').value = p.facebook_url || '';
+      document.getElementById('website').value = p.website_url || '';
+
+      const preview = document.getElementById('avatar-preview');
+      if (p.avatar_url) {
+        preview.innerHTML = `<img src="${p.avatar_url}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;" onerror="this.alt='failed'">`;
+      }
+    }
+
+    function toggleEdit() {
+      const edit = document.getElementById('profile-edit');
+      edit.style.display = edit.style.display === 'none' ? 'block' : 'none';
+    }
+
+    async function handleAvatarUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('Error', 'Image must be under 2MB', 'error');
+        return;
+      }
+
+      const url = await uploadAvatar(file);
+      if (url) {
+        document.getElementById('avatar-preview').innerHTML =
+          `<img src="${url}" alt="" style="width:80px;height:80px;border-radius:50%;object-fit:cover;">`;
+        renderProfile();
+      }
+    }
+
+    async function handleSaveProfile(e) {
+      e.preventDefault();
+      const form = e.target;
+      await updateProfile({
+        bio: form.bio.value,
+        linkedin_url: form.linkedin.value,
+        github_url: form.github.value,
+        twitter_url: form.twitter.value,
+        facebook_url: form.facebook.value,
+        website_url: form.website.value,
+      });
+      renderProfile();
+      toggleEdit();
+    }
+
+    async function renderMyContent() {
+      const posts = await getMyPosts();
+      const writeups = await getMyWriteups();
+
+      const postsEl = document.getElementById('my-posts');
+      const writeupsEl = document.getElementById('my-writeups');
+
+      if (posts.length) {
+        postsEl.innerHTML = `
+          <h2 class="section-title">My Posts</h2>
+          <div class="posts-grid">${posts.map(p => renderPostCard(p, true)).join('')}</div>
+        `;
+      }
+
+      if (writeups.length) {
+        writeupsEl.innerHTML = `
+          <h2 class="section-title">My Writeups</h2>
+          <div class="writeups-grid">${writeups.map(w => renderWriteupCard(w, true)).join('')}</div>
+        `;
+      }
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
