@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li><a href="admin.html" class="active">Admin</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <section class="section">
+      <h1 class="section-title">Admin Panel</h1>
+      <p class="section-subtitle">Manage users, content, and site settings.</p>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Dashboard</h2>
+      <div id="admin-dashboard"><div class="loading">Loading...</div></div>
+    </section>
+
+    <section class="section" id="admin-featured-section">
+      <h2 class="section-title">Featured Video</h2>
+      <p class="section-subtitle">Set the YouTube video shown on the home page.</p>
+      <div id="admin-featured-video"><div class="loading">Loading...</div></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Users</h2>
+      <p class="section-subtitle">Registered users and their content.</p>
+      <div id="admin-users-list"><div class="loading">Loading...</div></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Posts</h2>
+      <p class="section-subtitle">All posts. Delete inappropriate content.</p>
+      <div id="admin-posts-list"><div class="loading">Loading...</div></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Writeups</h2>
+      <p class="section-subtitle">All writeups. Delete inappropriate content.</p>
+      <div id="admin-writeups-list"><div class="loading">Loading...</div></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Comments</h2>
+      <p class="section-subtitle">All comments. Delete inappropriate content.</p>
+      <div id="admin-comments-list"><div class="loading">Loading...</div></div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/admin.js"></script>
+  <script>
+    async function loadAdminPage() {
+      await renderAdminDashboard();
+      await loadAdminFeaturedVideo();
+      await loadAdminUsers();
+      await loadAdminPosts();
+      await loadAdminWriteups();
+      await loadAdminComments();
+    }
+    onReady(loadAdminPage);
+    function toggleMenu() { document.getElementById('nav-links').classList.toggle('open'); }
+  </script>
+</body>
+</html>

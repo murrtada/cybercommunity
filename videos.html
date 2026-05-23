@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Videos - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html" class="active">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <section class="section">
+      <h2 class="section-title">Video Library</h2>
+      <p class="section-subtitle">Watch and share cybersecurity content via YouTube.</p>
+
+      <div class="youtube-input-area">
+        <h2>Add a YouTube Video</h2>
+        <div class="input-group">
+          <input type="url" id="youtube-url"
+            placeholder="Paste YouTube URL (e.g. https://youtube.com/watch?v=...)" />
+          <button class="btn btn-primary" onclick="loadYoutubeVideo()">Load Video</button>
+        </div>
+        <div id="player-container"></div>
+      </div>
+
+      <h2 style="font-size:1.2rem;margin-bottom:1.25rem;">Saved Videos</h2>
+      <div id="loading" class="loading">Loading...</div>
+      <div id="saved-videos" class="video-grid"></div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/videos.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

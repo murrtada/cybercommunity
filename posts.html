@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Posts - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html" class="active">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <section class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h2 class="section-title">Posts</h2>
+          <p class="section-subtitle">Tutorials, guides, and articles from the community.</p>
+        </div>
+        <a href="create-post.html" class="btn btn-primary" id="create-post-btn" style="display:none;">Write a Post</a>
+      </div>
+      <div id="loading" class="loading">Loading...</div>
+      <div id="posts-grid" class="posts-grid"></div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/posts.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    async function loadPostsPage() {
+      const posts = await getPublishedPosts();
+      const grid = document.getElementById('posts-grid');
+      const loading = document.getElementById('loading');
+      const btn = document.getElementById('create-post-btn');
+
+      if (getCurrentUserId()) {
+        btn.style.display = 'inline-flex';
+      }
+
+      loading.style.display = 'none';
+
+      if (posts.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><h3>No posts yet</h3><p>Be the first to share your knowledge.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = posts.map(p => renderPostCard(p)).join('');
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Writeups - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html" class="active">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <section class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;">
+        <div>
+          <h2 class="section-title">Security Writeups</h2>
+          <p class="section-subtitle">Bug bounty findings, CTF solutions, and security research from the community.</p>
+        </div>
+        <a href="create-writeup.html" class="btn btn-primary" id="create-writeup-btn" style="display:none;">Submit Writeup</a>
+      </div>
+      <div id="loading" class="loading">Loading...</div>
+      <div id="writeups-grid" class="writeups-grid"></div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/writeups.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    async function loadWriteupsPage() {
+      const writeups = await getPublishedWriteups();
+      const grid = document.getElementById('writeups-grid');
+      const loading = document.getElementById('loading');
+      const btn = document.getElementById('create-writeup-btn');
+
+      if (getCurrentUserId()) {
+        btn.style.display = 'inline-flex';
+      }
+
+      loading.style.display = 'none';
+
+      if (writeups.length === 0) {
+        grid.innerHTML = '<div class="empty-state"><h3>No writeups yet</h3><p>Be the first to share a writeup.</p></div>';
+        return;
+      }
+
+      grid.innerHTML = writeups.map(w => renderWriteupCard(w)).join('');
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

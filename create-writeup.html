@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Submit Writeup - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <section class="section">
+      <a href="writeups.html" class="back-link">&larr; Back to Writeups</a>
+      <form class="create-form" onsubmit="handleCreateWriteup(event)">
+        <h2 id="form-title">Submit a Writeup</h2>
+        <p class="subtitle">Share your security research, bug bounty findings, or writeups with the community.</p>
+
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" required placeholder="e.g. SQL Injection in API endpoint — Bug Bounty Writeup">
+        </div>
+
+        <div class="form-group">
+          <label for="content">Writeup (Markdown)</label>
+          <textarea id="content" name="content" rows="16" required placeholder="Write your full writeup in Markdown..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="excerpt">Excerpt (short summary for card preview)</label>
+          <input type="text" id="excerpt" name="excerpt" placeholder="A brief summary">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
+          <div class="form-group">
+            <label for="platform">Platform / Source (optional)</label>
+            <input type="text" id="platform" name="platform" placeholder="HackerOne, Bugcrowd, HTB, THM, etc.">
+          </div>
+          <div class="form-group">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">Select...</option>
+              <option value="Web">Web</option>
+              <option value="API">API</option>
+              <option value="Mobile">Mobile</option>
+              <option value="Cloud">Cloud</option>
+              <option value="Network">Network</option>
+              <option value="OSINT">OSINT</option>
+              <option value="Forensics">Forensics</option>
+              <option value="Reverse">Reverse Engineering</option>
+              <option value="Crypto">Cryptography</option>
+              <option value="Pwn">Pwn / Exploitation</option>
+              <option value="Misc">Misc</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="tags">Tags (comma-separated)</label>
+          <input type="text" id="tags" name="tags" placeholder="xss, sql-injection, privilege-escalation">
+        </div>
+
+        <div class="form-group">
+          <label for="cover_image">Cover Image URL (optional)</label>
+          <input type="url" id="cover_image" name="cover_image" placeholder="https://example.com/image.png">
+        </div>
+
+        <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;">
+          <input type="checkbox" id="published" name="published" style="width:auto;">
+          <label for="published" style="margin:0;">Publish immediately</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">Save Writeup</button>
+      </form>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/writeups.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    let editingWriteup = null;
+
+    onReady(async () => {
+      if (!getCurrentUserId()) {
+        showToast('Error', 'You must be logged in to submit a writeup', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1000);
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const editSlug = params.get('edit');
+      if (editSlug) {
+        await loadForEdit(editSlug);
+      }
+    });
+
+    async function loadForEdit(slug) {
+      const w = await getWriteupBySlug(slug);
+      if (!w || w.author_id !== getCurrentUserId()) {
+        showToast('Error', 'Writeup not found', 'error');
+        return;
+      }
+      editingWriteup = w;
+      document.getElementById('form-title').textContent = 'Edit Writeup';
+      document.getElementById('submit-btn').textContent = 'Update Writeup';
+      document.getElementById('title').value = w.title;
+      document.getElementById('content').value = w.content;
+      document.getElementById('excerpt').value = w.excerpt || '';
+      document.getElementById('platform').value = w.platform || '';
+      document.getElementById('category').value = w.category || '';
+      document.getElementById('tags').value = (w.tags || []).join(', ');
+      document.getElementById('cover_image').value = w.cover_image || '';
+      document.getElementById('published').checked = w.published;
+    }
+
+    async function handleCreateWriteup(e) {
+      e.preventDefault();
+      const form = e.target;
+      const title = form.title.value.trim();
+      const slug = slugify(title);
+
+      if (!slug) {
+        showToast('Error', 'Please enter a valid title', 'error');
+        return;
+      }
+
+      const tags = form.tags.value.split(',').map(t => t.trim()).filter(Boolean);
+
+      const writeup = {
+        title,
+        slug,
+        content: form.content.value,
+        excerpt: form.excerpt.value.trim(),
+        platform: form.platform.value.trim(),
+        category: form.category.value,
+        tags,
+        cover_image: form.cover_image.value.trim(),
+        published: form.published.checked,
+      };
+
+      let result;
+      if (editingWriteup) {
+        result = await updateWriteup(editingWriteup.id, writeup);
+      } else {
+        result = await createWriteup(writeup);
+      }
+
+      if (result) {
+        showToast('Success!', editingWriteup ? 'Writeup updated' : 'Writeup submitted');
+        setTimeout(() => window.location.href = `writeup.html?slug=${result.slug}`, 800);
+      }
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

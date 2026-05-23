@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Post - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="container">
+    <section class="section">
+      <a href="posts.html" class="back-link">&larr; Back to Posts</a>
+      <form class="create-form" onsubmit="handleCreatePost(event)">
+        <h2 id="form-title">Create a Post</h2>
+        <p class="subtitle">Share your knowledge with the community.</p>
+
+        <div class="form-group">
+          <label for="title">Title</label>
+          <input type="text" id="title" name="title" required placeholder="How to secure your API endpoints">
+        </div>
+
+        <div class="form-group">
+          <label for="content">Content (Markdown)</label>
+          <textarea id="content" name="content" rows="16" required placeholder="Write your post in Markdown..."></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="excerpt">Excerpt (short summary)</label>
+          <input type="text" id="excerpt" name="excerpt" placeholder="A brief summary for the card preview">
+        </div>
+
+        <div class="form-group">
+          <label for="tags">Tags (comma-separated)</label>
+          <input type="text" id="tags" name="tags" placeholder="web-security, api, authentication">
+        </div>
+
+        <div class="form-group">
+          <label for="cover_image">Cover Image URL</label>
+          <input type="url" id="cover_image" name="cover_image" placeholder="https://example.com/image.png">
+        </div>
+
+        <div class="form-group" style="display:flex;align-items:center;gap:0.75rem;">
+          <input type="checkbox" id="published" name="published" style="width:auto;">
+          <label for="published" style="margin:0;">Publish immediately</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary" id="submit-btn">Save Post</button>
+      </form>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/posts.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    let editingPost = null;
+
+    onReady(async () => {
+      if (!getCurrentUserId()) {
+        showToast('Error', 'You must be logged in to create a post', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1000);
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const editSlug = params.get('edit');
+      if (editSlug) {
+        await loadForEdit(editSlug);
+      }
+    });
+
+    async function loadForEdit(slug) {
+      const p = await getPostBySlug(slug);
+      if (!p || p.author_id !== getCurrentUserId()) {
+        showToast('Error', 'Post not found', 'error');
+        return;
+      }
+      editingPost = p;
+      document.getElementById('form-title').textContent = 'Edit Post';
+      document.getElementById('submit-btn').textContent = 'Update Post';
+      document.getElementById('title').value = p.title;
+      document.getElementById('content').value = p.content;
+      document.getElementById('excerpt').value = p.excerpt || '';
+      document.getElementById('tags').value = (p.tags || []).join(', ');
+      document.getElementById('cover_image').value = p.cover_image || '';
+      document.getElementById('published').checked = p.published;
+    }
+
+    async function handleCreatePost(e) {
+      e.preventDefault();
+      const form = e.target;
+      const title = form.title.value.trim();
+      const slug = slugify(title);
+
+      if (!slug) {
+        showToast('Error', 'Please enter a valid title', 'error');
+        return;
+      }
+
+      const tags = form.tags.value.split(',').map(t => t.trim()).filter(Boolean);
+
+      const post = {
+        title,
+        slug,
+        content: form.content.value,
+        excerpt: form.excerpt.value.trim(),
+        tags,
+        cover_image: form.cover_image.value.trim(),
+        published: form.published.checked,
+      };
+
+      let result;
+      if (editingPost) {
+        result = await updatePost(editingPost.id, post);
+      } else {
+        result = await createPost(post);
+      }
+
+      if (result) {
+        showToast('Success!', editingPost ? 'Post updated' : 'Post created');
+        setTimeout(() => window.location.href = `post.html?slug=${result.slug}`, 800);
+      }
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

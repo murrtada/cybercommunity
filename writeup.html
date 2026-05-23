@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Writeup - Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="post-container">
+    <a href="writeups.html" class="back-link">&larr; Back to Writeups</a>
+    <div id="loading" class="loading">Loading...</div>
+    <div id="writeup-content"></div>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/writeups.js"></script>
+  <script src="js/likes.js"></script>
+  <script src="js/comments.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/modal.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    let currentWriteup = null;
+
+    async function loadWriteupPage() {
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get('slug');
+      const container = document.getElementById('writeup-content');
+      const loading = document.getElementById('loading');
+
+      if (!slug) {
+        loading.style.display = 'none';
+        container.innerHTML = '<div class="post-card"><div class="post-body" style="padding:2rem;text-align:center;"><h3>Writeup not found</h3></div></div>';
+        return;
+      }
+
+      const writeup = await getWriteupBySlug(slug);
+      loading.style.display = 'none';
+
+      if (!writeup) {
+        container.innerHTML = '<div class="post-card"><div class="post-body" style="padding:2rem;text-align:center;"><h3>Writeup not found</h3></div></div>';
+        return;
+      }
+
+      currentWriteup = writeup;
+      const author = writeup.profiles || {};
+      const tags = writeup.tags || [];
+      const isOwner = getCurrentUserId() === writeup.author_id;
+      document.title = `${writeup.title} - Cyber Security Community`;
+
+      const initial = (author.full_name || author.username || '?')[0].toUpperCase();
+
+      container.innerHTML = `
+        <article class="post-card" data-content-type="writeup" data-content-id="${writeup.id}">
+          ${writeup.cover_image ? `<img src="${writeup.cover_image}" alt="" class="post-card-cover">` : ''}
+
+          <div class="post-header">
+            <div class="post-user">
+              <div class="post-avatar">${initial}</div>
+              <div class="user-info">
+                <a href="profile.html?user=${writeup.author_id}" class="username">${escapeHtml(author.username || 'Unknown')}</a>
+                <span class="timestamp">Posted ${timeAgo(writeup.created_at)}</span>
+              </div>
+            </div>
+            ${isOwner ? `
+              <div class="post-dropdown">
+                <button class="dropdown-toggle" onclick="togglePostDropdown(this)">&#8901;&#8901;&#8901;</button>
+                <div class="dropdown-menu">
+                  <a href="create-writeup.html?edit=${writeup.slug}">&#9998; Edit</a>
+                  <button class="dropdown-danger" onclick="confirmDeleteCurrentWriteup()">&#128465; Delete</button>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="post-body">
+            <h1 class="post-title">${escapeHtml(writeup.title)}</h1>
+            <div class="writeup-badges" style="margin:0.5rem 0 1rem;">
+              ${writeup.platform ? `<span class="badge badge-platform">${escapeHtml(writeup.platform)}</span>` : ''}
+              ${writeup.category ? `<span class="badge badge-cat">${escapeHtml(writeup.category)}</span>` : ''}
+            </div>
+            <div class="post-text">${marked.parse(writeup.content)}</div>
+            ${tags.length ? `
+              <div class="post-tags">
+                ${tags.map(t => `<a href="writeups.html?tag=${encodeURIComponent(t)}" class="post-tag">#${escapeHtml(t)}</a>`).join('')}
+              </div>
+            ` : ''}
+          </div>
+
+          <div class="post-stats">
+            <span class="stat-item likes-stat">
+              <span class="stat-icon">❤</span>
+              <span class="stat-count">0</span> likes
+            </span>
+            <span class="stat-item comments-stat">
+              <span class="stat-icon">💬</span>
+              <span class="stat-count">0</span> comments
+            </span>
+          </div>
+
+          <div class="post-actions">
+            <button class="action-btn like-btn" onclick="handleLike('writeup', '${writeup.id}')">
+              <span class="action-icon">♡</span>
+              <span>Like</span>
+              <span class="likers-tooltip"></span>
+            </button>
+            <button class="action-btn" onclick="document.getElementById('comment-text-input').focus()">
+              <span class="action-icon">💬</span>
+              <span>Comment</span>
+            </button>
+            <button class="action-btn" onclick="shareCopyLink(window.location.href)">
+              <span class="action-icon">↗</span>
+              <span>Share</span>
+            </button>
+          </div>
+
+          <div class="comments-section" id="comment-section" data-content-type="writeup" data-content-id="${writeup.id}">
+            <div class="comments-heading">Comments</div>
+
+            ${getCurrentUserId() ? `
+              <div class="comment-input-area">
+                <div class="comment-input-avatar">${(currentProfile?.username || '?')[0].toUpperCase()}</div>
+                <div class="comment-input-wrapper">
+                  <textarea class="comment-input" id="comment-text-input" placeholder="Write a comment..." rows="1" maxlength="1000"></textarea>
+                  <span class="char-counter" id="char-counter">0/1000</span>
+                  <div class="comment-submit-row">
+                    <button class="comment-submit-btn" onclick="handleCommentSubmit('writeup', '${writeup.id}')">Post</button>
+                  </div>
+                </div>
+              </div>
+            ` : `
+              <div class="sign-in-to-comment">
+                <a href="login.html">Sign in</a> to leave a comment
+              </div>
+            `}
+
+            <div id="comments-container">
+              <div class="comment-thread"></div>
+            </div>
+          </div>
+        </article>
+      `;
+
+      initShareButton();
+      await loadComments('writeup', writeup.id);
+      await loadLikeState('writeup', writeup.id);
+      setupCommentInput();
+      setupCommentRealtime('writeup', writeup.id);
+    }
+
+    function timeAgo(dateStr) {
+      const now = Date.now();
+      const diff = now - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins} minute${mins === 1 ? '' : 's'} ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs} hour${hrs === 1 ? '' : 's'} ago`;
+      const days = Math.floor(hrs / 24);
+      if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+      return new Date(dateStr).toLocaleDateString();
+    }
+
+    function togglePostDropdown(btn) {
+      const menu = btn.nextElementSibling;
+      if (menu) menu.classList.toggle('open');
+      document.addEventListener('click', closeDropdowns = (e) => {
+        if (!btn.contains(e.target) && !menu.contains(e.target)) {
+          menu.classList.remove('open');
+          document.removeEventListener('click', closeDropdowns);
+        }
+      });
+    }
+
+    async function confirmDeleteCurrentWriteup() {
+      if (!currentWriteup) return;
+      const confirmed = await showModal(
+        'Delete writeup?',
+        'This will permanently delete this writeup and all associated likes and comments. This action cannot be undone.',
+        'Delete'
+      );
+      if (!confirmed) return;
+      const ok = await deleteWriteup(currentWriteup.id);
+      if (ok) {
+        showToast('Deleted', 'Writeup removed');
+        window.location.href = 'writeups.html';
+      }
+    }
+
+    let closeDropdowns = null;
+
+    function initShareButton() {
+      const shareBtn = document.querySelector('.action-btn:last-child');
+      if (shareBtn && navigator.share) {
+        shareBtn.onclick = () => {
+          navigator.share({
+            title: currentWriteup?.title || 'Cyber Security Writeup',
+            url: window.location.href
+          }).catch(() => {});
+        };
+      }
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>

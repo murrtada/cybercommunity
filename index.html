@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cyber Security Community</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <nav class="navbar">
+    <div class="navbar-inner">
+      <a href="index.html" class="logo">CyberSec<span>Community</span></a>
+      <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">&#9776;</button>
+      <ul class="nav-links" id="nav-links">
+        <li><a href="index.html" class="active">Home</a></li>
+        <li><a href="posts.html">Posts</a></li>
+        <li><a href="writeups.html">Writeups</a></li>
+        <li><a href="services.html">Contact</a></li>
+        <li><a href="videos.html">Videos</a></li>
+        <li id="auth-state"><a href="login.html">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="container">
+      <h1>Learn. Share. Defend.</h1>
+      <p>A community-driven platform for cybersecurity enthusiasts. Watch tutorials, share writeups, and grow together.</p>
+      <div class="hero-buttons">
+        <a href="videos.html" class="btn btn-primary">
+          <svg width="18" height="18" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          Browse Videos
+        </a>
+        <a href="register.html" class="btn btn-outline">Join Community</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="container">
+    <!-- Featured Video Section -->
+    <section class="section">
+      <h2 class="section-title">Featured Video</h2>
+      <p class="section-subtitle">Check out our latest featured content.</p>
+      <div id="featured-video" class="featured-video"><div class="loading">Loading...</div></div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Latest Posts</h2>
+      <p class="section-subtitle">Recent tutorials and articles from the community.</p>
+      <div id="home-posts" class="posts-grid"><div class="loading">Loading...</div></div>
+      <div style="text-align:center;margin-top:1.5rem;">
+        <a href="posts.html" class="btn btn-outline">View All Posts</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Recent Writeups</h2>
+      <p class="section-subtitle">Latest security writeups, bug bounty findings, and CTF solutions.</p>
+      <div id="home-writeups" class="writeups-grid"><div class="loading">Loading...</div></div>
+      <div style="text-align:center;margin-top:1.5rem;">
+        <a href="writeups.html" class="btn btn-outline">View All Writeups</a>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Why Join?</h2>
+      <p class="section-subtitle">What you get as a member of our community.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1.5rem;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.75rem;">
+          <h3 style="margin-bottom:0.5rem;color:var(--accent);">Tutorials</h3>
+          <p style="color:var(--text-secondary);font-size:0.9rem;">Step-by-step guides on penetration testing, reverse engineering, and defensive security.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.75rem;">
+          <h3 style="margin-bottom:0.5rem;color:var(--accent);">Community</h3>
+          <p style="color:var(--text-secondary);font-size:0.9rem;">Connect with like-minded security researchers and practitioners from around the world.</p>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:1.75rem;">
+          <h3 style="margin-bottom:0.5rem;color:var(--accent);">Resources</h3>
+          <p style="color:var(--text-secondary);font-size:0.9rem;">Curated tools, cheat sheets, and writeups shared by the community.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer class="footer">
+    <div class="container">
+      &copy; 2026 Cyber Security Community. All rights reserved.
+    </div>
+  </footer>
+
+  <!-- Chatbot -->
+  <button class="chatbot-toggle" onclick="toggleChatbot()" aria-label="Chat">&#128172;</button>
+  <div class="chatbot-window" id="chatbot-window">
+    <div class="chat-header">
+      <span>Need help?</span>
+      <button onclick="toggleChatbot()" style="background:none;border:none;color:inherit;font-size:1.2rem;cursor:pointer;">&times;</button>
+    </div>
+    <div class="chat-messages"></div>
+    <div class="chat-faq" id="chat-faq"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="js/supabase-config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/featured.js"></script>
+  <script src="js/posts.js"></script>
+  <script src="js/writeups.js"></script>
+  <script src="js/chatbot.js"></script>
+  <script src="js/main.js"></script>
+  <script>
+    async function loadHomePage() {
+      const posts = await getPublishedPosts();
+      const writeups = await getPublishedWriteups();
+
+      const postsEl = document.getElementById('home-posts');
+      if (posts.length) {
+        postsEl.innerHTML = posts.slice(0, 3).map(p => renderPostCard(p)).join('');
+      } else {
+        postsEl.innerHTML = '<div class="empty-state"><h3>No posts yet</h3></div>';
+      }
+
+      const writeupsEl = document.getElementById('home-writeups');
+      if (writeups.length) {
+        writeupsEl.innerHTML = writeups.slice(0, 3).map(w => renderWriteupCard(w)).join('');
+      } else {
+        writeupsEl.innerHTML = '<div class="empty-state"><h3>No writeups yet</h3></div>';
+      }
+    }
+
+    function toggleMenu() {
+      document.getElementById('nav-links').classList.toggle('open');
+    }
+  </script>
+</body>
+</html>
