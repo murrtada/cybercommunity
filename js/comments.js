@@ -47,7 +47,14 @@ async function addComment(contentType, contentId, body, parentId = null) {
     .select('*, profiles!user_id(username, full_name, avatar_url)')
     .single();
 
-  if (error) { showToast('Error', error.message, 'error'); return null; }
+  if (error) {
+    if (error.message && error.message.includes('foreign key')) {
+      showToast('Error', 'The comment you are replying to was deleted. Please refresh.', 'error');
+    } else {
+      showToast('Error', error.message, 'error');
+    }
+    return null;
+  }
   return data;
 }
 
@@ -242,18 +249,23 @@ async function handleReplySubmit(contentType, contentId, parentId) {
   if (!body.trim()) return;
 
   input.disabled = true;
-  const comment = await addComment(contentType, contentId, body, parentId);
-  input.disabled = false;
-
-  if (comment) {
-    input.value = '';
-    const replyContainer = document.getElementById('replies-' + parentId);
-    if (replyContainer) {
-      replyContainer.insertAdjacentHTML('beforeend', renderCommentBubble(comment, true));
+  try {
+    const comment = await addComment(contentType, contentId, body, parentId);
+    if (comment) {
+      input.value = '';
+      const replyContainer = document.getElementById('replies-' + parentId);
+      if (replyContainer) {
+        replyContainer.insertAdjacentHTML('beforeend', renderCommentBubble(comment, true));
+      }
+      const replyForm = document.getElementById('reply-form-' + parentId);
+      if (replyForm) replyForm.remove();
+      updateCommentCount(contentType, contentId);
     }
-    const replyForm = document.getElementById('reply-form-' + parentId);
-    if (replyForm) replyForm.remove();
-    updateCommentCount(contentType, contentId);
+  } catch (e) {
+    console.error(e);
+    showToast('Error', 'Failed to post reply', 'error');
+  } finally {
+    input.disabled = false;
   }
 }
 
