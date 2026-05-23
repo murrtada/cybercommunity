@@ -153,38 +153,25 @@ function closeNotifDropdown() {
   }
 }
 
-let notifCtx = null;
+let notifAudio = null;
 
-async function unlockAudio() {
-  if (!notifCtx) {
-    notifCtx = new (window.AudioContext || window.webkitAudioContext)();
+function unlockAudio() {
+  if (!notifAudio) {
+    notifAudio = new Audio('js/beeb.mp3');
+    notifAudio.volume = 0.5;
   }
-  if (notifCtx.state === 'suspended') {
-    await notifCtx.resume();
-  }
+  notifAudio.play().then(() => {
+    notifAudio.pause();
+    notifAudio.currentTime = 0;
+  }).catch(() => {});
 }
 document.addEventListener('click', unlockAudio, { once: true });
 document.addEventListener('touchstart', unlockAudio, { once: true });
 
 function playNotifSound() {
-  if (notifCtx && notifCtx.state === 'running') {
-    fetch('js/beeb.mp3')
-      .then(r => r.arrayBuffer())
-      .then(buf => notifCtx.decodeAudioData(buf))
-      .then(buf => {
-        const src = notifCtx.createBufferSource();
-        src.buffer = buf;
-        src.connect(notifCtx.destination);
-        src.start();
-      })
-      .catch(() => {});
-  } else {
-    try {
-      const a = new Audio('js/beeb.mp3');
-      a.volume = 0.5;
-      a.play().catch(() => {});
-    } catch (e) { /* ignore */ }
-  }
+  if (!notifAudio) return;
+  notifAudio.currentTime = 0;
+  notifAudio.play().catch(() => {});
 }
 
 // Real-time notification count
