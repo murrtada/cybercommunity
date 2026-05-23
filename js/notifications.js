@@ -155,27 +155,36 @@ function closeNotifDropdown() {
 
 let notifCtx = null;
 
-function unlockAudio() {
+async function unlockAudio() {
   if (!notifCtx) {
     notifCtx = new (window.AudioContext || window.webkitAudioContext)();
   }
-  if (notifCtx.state === 'suspended') notifCtx.resume();
+  if (notifCtx.state === 'suspended') {
+    await notifCtx.resume();
+  }
 }
 document.addEventListener('click', unlockAudio, { once: true });
 document.addEventListener('touchstart', unlockAudio, { once: true });
 
 function playNotifSound() {
-  if (!notifCtx || notifCtx.state !== 'running') return;
-  fetch('js/beeb.mp3')
-    .then(r => r.arrayBuffer())
-    .then(buf => notifCtx.decodeAudioData(buf))
-    .then(buf => {
-      const src = notifCtx.createBufferSource();
-      src.buffer = buf;
-      src.connect(notifCtx.destination);
-      src.start();
-    })
-    .catch(() => {});
+  if (notifCtx && notifCtx.state === 'running') {
+    fetch('js/beeb.mp3')
+      .then(r => r.arrayBuffer())
+      .then(buf => notifCtx.decodeAudioData(buf))
+      .then(buf => {
+        const src = notifCtx.createBufferSource();
+        src.buffer = buf;
+        src.connect(notifCtx.destination);
+        src.start();
+      })
+      .catch(() => {});
+  } else {
+    try {
+      const a = new Audio('js/beeb.mp3');
+      a.volume = 0.5;
+      a.play().catch(() => {});
+    } catch (e) { /* ignore */ }
+  }
 }
 
 // Real-time notification count
