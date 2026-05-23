@@ -167,6 +167,14 @@ function playNotifSound() {
   } catch (e) { /* ignore */ }
 }
 
+// Request desktop notification permission on first click
+function requestNotifPermission() {
+  if ('Notification' in window && Notification.permission === 'default') {
+    Notification.requestPermission().catch(() => {});
+  }
+}
+document.addEventListener('click', requestNotifPermission, { once: true });
+
 // Try to unlock audio on first user click for background playback
 document.addEventListener('click', () => {
   if (!notifAudio) {
@@ -216,9 +224,18 @@ function setupNotifRealtime() {
       schema: 'public',
       table: 'notifications',
       filter: `user_id=eq.${currentUser.id}`
-    }, () => {
+    }, (payload) => {
       loadNotifCount();
       playNotifSound();
+      if ('Notification' in window && Notification.permission === 'granted') {
+        const n = payload.new || {};
+        const title = n.title || 'New notification';
+        const message = n.message || '';
+        new Notification('CyberSec Community', {
+          body: message ? `${title}: ${message}` : title,
+          icon: '/favicon.ico'
+        });
+      }
     })
     .subscribe((status, err) => {
       if (err) console.warn('Notif realtime error:', err);

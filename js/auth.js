@@ -47,6 +47,7 @@ async function initAuth() {
 
     // Re-run page functions if session arrived after render
     if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      if (typeof setupNotifRealtime === 'function') setupNotifRealtime();
       if (typeof loadHomePage === 'function') await loadHomePage();
       if (typeof loadPostsPage === 'function') await loadPostsPage();
       if (typeof loadPostPage === 'function') await loadPostPage();

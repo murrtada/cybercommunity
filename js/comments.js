@@ -1,5 +1,8 @@
 const COMMENT_PAGE_SIZE = 20;
 let commentRealtimeSub = null;
+let commentPollTimer = null;
+let pollContentType = null;
+let pollContentId = null;
 
 function commentMarkdown(text) {
   return escapeHtml(text)
@@ -410,10 +413,53 @@ function setupCommentInput() {
   if (counter) updateCharCounter();
 }
 
+async function pollComments() {
+  if (!pollContentType || !pollContentId) return;
+  const list = document.querySelector('.comment-thread');
+  if (!list) return;
+
+  const { data } = await supabaseClient
+    .from('comments')
+    .select('*, profiles!user_id(username, full_name, avatar_url)')
+    .eq('content_type', pollContentType)
+    .eq('content_id', pollContentId)
+    .is('parent_id', null)
+    .order('created_at', { ascending: false })
+    .limit(20);
+
+  if (!data) return;
+
+  for (const comment of data) {
+    if (comment.user_id === getCurrentUserId()) continue;
+    const existing = list.querySelector(`[data-comment-id="${comment.id}"]`);
+    if (existing) continue;
+    const empty = list.querySelector('.comments-empty');
+    if (empty) list.innerHTML = '';
+    list.insertAdjacentHTML('afterbegin', renderCommentWithReplies(comment, []));
+  }
+  updateCommentCount(pollContentType, pollContentId);
+}
+
+function startCommentPolling() {
+  stopCommentPolling();
+  commentPollTimer = setInterval(pollComments, 15000);
+}
+
+function stopCommentPolling() {
+  if (commentPollTimer) {
+    clearInterval(commentPollTimer);
+    commentPollTimer = null;
+  }
+}
+
 function setupCommentRealtime(contentType, contentId) {
   if (commentRealtimeSub) {
     supabaseClient.removeChannel(commentRealtimeSub);
   }
+
+  pollContentType = contentType;
+  pollContentId = contentId;
+  startCommentPolling();
 
   commentRealtimeSub = supabaseClient.channel('comments-realtime')
     .on('postgres_changes', {
@@ -449,6 +495,7 @@ function setupCommentRealtime(contentType, contentId) {
 }
 
 function destroyCommentRealtime() {
+  stopCommentPolling();
   if (commentRealtimeSub) {
     supabaseClient.removeChannel(commentRealtimeSub);
     commentRealtimeSub = null;
