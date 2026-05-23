@@ -210,20 +210,25 @@ async function handleCommentSubmit(contentType, contentId) {
   if (!body.trim()) return;
 
   input.disabled = true;
-  const comment = await addComment(contentType, contentId, body);
-  input.disabled = false;
-
-  if (comment) {
-    input.value = '';
-    updateCharCounter();
-    const list = document.querySelector('.comment-thread');
-    if (list) {
-      const empty = list.querySelector('.comments-empty');
-      if (empty) list.innerHTML = '';
-      const replies = await fetchReplies(comment.id);
-      list.insertAdjacentHTML('afterbegin', renderCommentWithReplies(comment, replies));
+  try {
+    const comment = await addComment(contentType, contentId, body);
+    if (comment) {
+      input.value = '';
+      updateCharCounter();
+      const list = document.querySelector('.comment-thread');
+      if (list) {
+        const empty = list.querySelector('.comments-empty');
+        if (empty) list.innerHTML = '';
+        const replies = await fetchReplies(comment.id);
+        list.insertAdjacentHTML('afterbegin', renderCommentWithReplies(comment, replies));
+      }
+      updateCommentCount(contentType, contentId);
     }
-    updateCommentCount(contentType, contentId);
+  } catch (e) {
+    console.error(e);
+    showToast('Error', 'Failed to post comment', 'error');
+  } finally {
+    input.disabled = false;
   }
 }
 
@@ -419,6 +424,7 @@ function setupCommentRealtime(contentType, contentId) {
     }, async (payload) => {
       const newComment = payload.new;
       if (newComment.parent_id) return;
+      if (newComment.user_id === getCurrentUserId()) return;
 
       const list = document.querySelector('.comment-thread');
       if (!list) return;

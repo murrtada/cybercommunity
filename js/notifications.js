@@ -167,6 +167,13 @@ function playNotifSound() {
   } catch (e) { /* ignore */ }
 }
 
+// Refresh notification count on page visibility change (fallback for real-time)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && currentUser && typeof loadNotifCount === 'function') {
+    loadNotifCount();
+  }
+});
+
 // Real-time notification count
 function setupNotifRealtime() {
   if (!currentUser) return;
