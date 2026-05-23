@@ -1,4 +1,5 @@
 let notifDropdown = null;
+let notifAudio = null;
 
 async function fetchNotifications(limit = 20) {
   const { data } = await supabaseClient
@@ -107,14 +108,14 @@ async function toggleNotifDropdown(event) {
 
   if (!currentUser) return;
 
+  playNotifSound();
+
   const bell = document.getElementById('notif-bell');
   if (!bell) return;
   const rect = bell.getBoundingClientRect();
 
   const notifs = await fetchNotifications(8);
   const unread = await getUnreadCount();
-
-  if (unread > 0) playNotifSound();
 
   const dropdown = document.createElement('div');
   dropdown.className = 'notif-dropdown';
@@ -157,9 +158,12 @@ function closeNotifDropdown() {
 
 function playNotifSound() {
   try {
-    const a = new Audio('js/beeb.mp3');
-    a.volume = 0.5;
-    a.play().catch(() => {});
+    if (!notifAudio) {
+      notifAudio = new Audio('js/beeb.mp3');
+      notifAudio.volume = 0.5;
+    }
+    notifAudio.currentTime = 0;
+    notifAudio.play().catch(() => {});
   } catch (e) { /* ignore */ }
 }
 
