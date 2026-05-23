@@ -2146,6 +2146,12 @@ body {
   .post-container {
     padding: 1rem 0.5rem;
   }
+  .contact-layout {
+    grid-template-columns: 1fr;
+  }
+  .contact-sidebar {
+    order: -1;
+  }
 }
 
 /* ============ NOTIFICATIONS ============ */

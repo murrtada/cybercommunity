@@ -33,6 +33,7 @@ async function markNotifRead(id) {
     .update({ is_read: true })
     .eq('id', id)
     .eq('user_id', currentUser.id);
+  loadNotifCount();
 }
 
 async function markAllNotifRead() {
@@ -146,6 +147,23 @@ function closeNotifDropdown() {
   }
 }
 
+function playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 880;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.25);
+  } catch (e) { /* ignore */ }
+}
+
 // Real-time notification count
 function setupNotifRealtime() {
   if (!currentUser) return;
@@ -157,6 +175,7 @@ function setupNotifRealtime() {
       filter: `user_id=eq.${currentUser.id}`
     }, () => {
       loadNotifCount();
+      playNotifSound();
     })
     .subscribe();
   return channel;
