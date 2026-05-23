@@ -114,6 +114,8 @@ async function toggleNotifDropdown(event) {
   const notifs = await fetchNotifications(8);
   const unread = await getUnreadCount();
 
+  if (unread > 0) playNotifSound();
+
   const dropdown = document.createElement('div');
   dropdown.className = 'notif-dropdown';
   dropdown.style.cssText = `
@@ -153,25 +155,12 @@ function closeNotifDropdown() {
   }
 }
 
-let notifAudio = null;
-
-function unlockAudio() {
-  if (!notifAudio) {
-    notifAudio = new Audio('js/beeb.mp3');
-    notifAudio.volume = 0.5;
-  }
-  notifAudio.play().then(() => {
-    notifAudio.pause();
-    notifAudio.currentTime = 0;
-  }).catch(() => {});
-}
-document.addEventListener('click', unlockAudio, { once: true });
-document.addEventListener('touchstart', unlockAudio, { once: true });
-
 function playNotifSound() {
-  if (!notifAudio) return;
-  notifAudio.currentTime = 0;
-  notifAudio.play().catch(() => {});
+  try {
+    const a = new Audio('js/beeb.mp3');
+    a.volume = 0.5;
+    a.play().catch(() => {});
+  } catch (e) { /* ignore */ }
 }
 
 // Real-time notification count
