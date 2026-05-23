@@ -66,7 +66,7 @@ $$;
 CREATE OR REPLACE FUNCTION handle_like_notification()
 RETURNS TRIGGER
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = 'public'
 AS $$
 DECLARE
   content_author_id UUID;
@@ -98,7 +98,7 @@ CREATE TRIGGER on_like_insert
 CREATE OR REPLACE FUNCTION handle_comment_notification()
 RETURNS TRIGGER
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = 'public'
 AS $$
 DECLARE
   content_author_id UUID;
@@ -133,7 +133,7 @@ CREATE TRIGGER on_comment_insert
 CREATE OR REPLACE FUNCTION handle_reply_notification()
 RETURNS TRIGGER
 SECURITY DEFINER
-SET search_path = ''
+SET search_path = 'public'
 AS $$
 DECLARE
   parent_author_id UUID;
@@ -243,3 +243,7 @@ CREATE POLICY "Admins can update any profile"
   ON profiles FOR UPDATE USING (
     EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND is_admin = true)
   );
+
+DROP POLICY IF EXISTS "Triggers can insert notifications" ON notifications;
+CREATE POLICY "Triggers can insert notifications"
+  ON notifications FOR INSERT WITH CHECK (true);
