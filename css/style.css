@@ -2152,6 +2152,9 @@ body {
   .contact-sidebar {
     order: -1;
   }
+  .notif-dropdown {
+    max-height: 60vh !important;
+  }
 }
 
 /* ============ NOTIFICATIONS ============ */

@@ -114,14 +114,17 @@ async function toggleNotifDropdown(event) {
   if (!bell) return;
   const rect = bell.getBoundingClientRect();
 
+  const isMobile = window.innerWidth < 768;
+  const dropdownWidth = isMobile ? Math.min(360, window.innerWidth - 20) : 360;
+
   const notifs = await fetchNotifications(8);
   const unread = await getUnreadCount();
 
   const dropdown = document.createElement('div');
   dropdown.className = 'notif-dropdown';
   dropdown.style.cssText = `
-    position: fixed; top: ${rect.bottom + 8}px; right: ${Math.max(10, window.innerWidth - rect.right + 10)}px;
-    width: 360px; max-height: 480px; background: var(--bg-card); border: 1px solid var(--border);
+    position: fixed; top: ${rect.bottom + 8}px; right: ${isMobile ? 10 : Math.max(10, window.innerWidth - rect.right + 10)}px;
+    width: ${dropdownWidth}px; max-height: 480px; background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 1000; overflow: hidden; display: flex; flex-direction: column;
   `;
 
