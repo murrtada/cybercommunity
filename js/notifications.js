@@ -115,7 +115,12 @@ async function toggleNotifDropdown(event) {
   const rect = bell.getBoundingClientRect();
 
   const isMobile = window.innerWidth < 768;
-  const dropdownWidth = isMobile ? Math.min(360, window.innerWidth - 20) : 360;
+  const dropdownWidth = isMobile ? window.innerWidth - 20 : 360;
+  const dropdownTop = isMobile
+    ? Math.min(rect.bottom + 8, window.innerHeight - 60)
+    : rect.bottom + 8;
+  const dropdownRight = isMobile ? 10 : Math.max(10, window.innerWidth - rect.right + 10);
+  const dropdownMaxHeight = isMobile ? Math.min(480, window.innerHeight - dropdownTop - 10) : 480;
 
   const notifs = await fetchNotifications(8);
   const unread = await getUnreadCount();
@@ -123,8 +128,8 @@ async function toggleNotifDropdown(event) {
   const dropdown = document.createElement('div');
   dropdown.className = 'notif-dropdown';
   dropdown.style.cssText = `
-    position: fixed; top: ${rect.bottom + 8}px; right: ${isMobile ? 10 : Math.max(10, window.innerWidth - rect.right + 10)}px;
-    width: ${dropdownWidth}px; max-height: 480px; background: var(--bg-card); border: 1px solid var(--border);
+    position: fixed; top: ${dropdownTop}px; right: ${dropdownRight}px;
+    width: ${dropdownWidth}px; max-height: ${dropdownMaxHeight}px; background: var(--bg-card); border: 1px solid var(--border);
     border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 1000; overflow: hidden; display: flex; flex-direction: column;
   `;
 
