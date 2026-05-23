@@ -167,6 +167,18 @@ function playNotifSound() {
   } catch (e) { /* ignore */ }
 }
 
+// Try to unlock audio on first user click for background playback
+document.addEventListener('click', () => {
+  if (!notifAudio) {
+    notifAudio = new Audio('js/beeb.mp3');
+    notifAudio.volume = 0.5;
+  }
+  notifAudio.play().then(() => {
+    notifAudio.pause();
+    notifAudio.currentTime = 0;
+  }).catch(() => {});
+}, { once: true });
+
 // Refresh notification count on page visibility change (fallback for real-time)
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden && currentUser && typeof loadNotifCount === 'function') {
@@ -174,9 +186,30 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+let notifPollTimer = null;
+
+function startNotifPolling() {
+  stopNotifPolling();
+  notifPollTimer = setInterval(() => {
+    if (currentUser) {
+      loadNotifCount();
+    }
+  }, 30000);
+}
+
+function stopNotifPolling() {
+  if (notifPollTimer) {
+    clearInterval(notifPollTimer);
+    notifPollTimer = null;
+  }
+}
+
 // Real-time notification count
 function setupNotifRealtime() {
   if (!currentUser) return;
+
+  startNotifPolling();
+
   const channel = supabaseClient.channel('notif-realtime')
     .on('postgres_changes', {
       event: 'INSERT',
@@ -187,6 +220,8 @@ function setupNotifRealtime() {
       loadNotifCount();
       playNotifSound();
     })
-    .subscribe();
+    .subscribe((status, err) => {
+      if (err) console.warn('Notif realtime error:', err);
+    });
   return channel;
 }
