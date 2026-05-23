@@ -72,11 +72,17 @@ function notifLink(n) {
   return '#';
 }
 
+async function handleNotifClick(event, id, href) {
+  event.preventDefault();
+  await markNotifRead(id);
+  window.location.href = href;
+}
+
 function renderNotifItem(n) {
   const actor = n.actor || {};
   return `
     <a href="${notifLink(n)}" class="notif-item ${n.is_read ? '' : 'unread'}"
-       onclick="markNotifRead('${n.id}')" data-id="${n.id}">
+       onclick="handleNotifClick(event, '${n.id}', '${notifLink(n)}')" data-id="${n.id}">
       <span class="notif-icon">${notifIcon(n.type)}</span>
       <div class="notif-body">
         <div class="notif-text">
@@ -147,12 +153,29 @@ function closeNotifDropdown() {
   }
 }
 
+let notifCtx = null;
+
+function unlockAudio() {
+  if (!notifCtx) {
+    notifCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (notifCtx.state === 'suspended') notifCtx.resume();
+}
+document.addEventListener('click', unlockAudio, { once: true });
+document.addEventListener('touchstart', unlockAudio, { once: true });
+
 function playNotifSound() {
-  try {
-    const audio = new Audio('js/beeb.mp3');
-    audio.volume = 0.5;
-    audio.play().catch(() => {});
-  } catch (e) { /* ignore */ }
+  if (!notifCtx || notifCtx.state !== 'running') return;
+  fetch('js/beeb.mp3')
+    .then(r => r.arrayBuffer())
+    .then(buf => notifCtx.decodeAudioData(buf))
+    .then(buf => {
+      const src = notifCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(notifCtx.destination);
+      src.start();
+    })
+    .catch(() => {});
 }
 
 // Real-time notification count
